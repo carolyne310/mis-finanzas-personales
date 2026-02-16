@@ -24,7 +24,6 @@
     <script type="text/babel">
         // --- PEGA TUS DATOS AQUÍ ---
         const firebaseConfig = {
-            apiKey: "AIzaSyD2h9l8LDl_R85R6R5Lr961jcoxVCDkSNs",
   authDomain: "mis-finanzas-600dc.firebaseapp.com",
   projectId: "mis-finanzas-600dc",
   storageBucket: "mis-finanzas-600dc.firebasestorage.app",
@@ -66,7 +65,7 @@
 
             // Carga modular de Firebase
             useEffect(() => {
-                if (firebaseConfig.apiKey === "TU_API_KEY") {
+                if (firebaseConfig.apiKey === "AIzaSyD2h9l8LDl_R85R6R5Lr961jcoxVCDkSNs") {
                     setError("Configuración pendiente. Por favor, pega tus claves de Firebase en el código.");
                     setLoading(false);
                     return;
