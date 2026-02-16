@@ -7,33 +7,34 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
         .error-card { border-top: 4px solid #ef4444; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-slate-50">
     <div id="root"></div>
 
-    <!-- Scripts de React y Babel -->
+    <!-- Librerías Necesarias -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script type="text/babel">
-        // --- PEGA TUS DATOS AQUÍ ---
+        // CONFIGURACIÓN CORREGIDA CON TUS DATOS
         const firebaseConfig = {
-  authDomain: "mis-finanzas-600dc.firebaseapp.com",
-  projectId: "mis-finanzas-600dc",
-  storageBucket: "mis-finanzas-600dc.firebasestorage.app",
-  messagingSenderId: "509918317471",
-  appId: "1:509918317471:web:b7e6c9bfc1892fcf5d4baa"
-};
+            apiKey: "AIzaSyD2h9l8LDl_R85R6R5Lr961jcoxVCDkSNs", // Insertada de tu mensaje anterior
+            authDomain: "mis-finanzas-600dc.firebaseapp.com",
+            projectId: "mis-finanzas-600dc",
+            storageBucket: "mis-finanzas-600dc.firebasestorage.app",
+            messagingSenderId: "509918317471",
+            appId: "1:509918317471:web:b7e6c9bfc1892fcf5d4baa"
+        };
 
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect } = React;
 
-        // Componente de Icono Lucide
         const Icon = ({ name, className }) => {
             const [svg, setSvg] = useState('');
             useEffect(() => {
@@ -56,22 +57,15 @@
             const [fb, setFb] = useState(null);
             const [user, setUser] = useState(null);
             const [transactions, setTransactions] = useState([]);
-            const [activeTab, setActiveTab] = useState('transacciones');
             const [amount, setAmount] = useState('');
             const [type, setType] = useState('gasto');
             const [category, setCategory] = useState('comida');
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
 
-            // Carga modular de Firebase
+            // Inicializar Firebase
             useEffect(() => {
-                if (firebaseConfig.apiKey === "AIzaSyD2h9l8LDl_R85R6R5Lr961jcoxVCDkSNs") {
-                    setError("Configuración pendiente. Por favor, pega tus claves de Firebase en el código.");
-                    setLoading(false);
-                    return;
-                }
-
-                const init = async () => {
+                const initFirebase = async () => {
                     try {
                         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
                         const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
@@ -85,30 +79,31 @@
 
                         onAuthStateChanged(auth, (u) => {
                             if (u) setUser(u);
-                            else signInAnonymously(auth).catch(e => setError("Error de Auth: " + e.message));
+                            else signInAnonymously(auth).catch(e => setError("Error Autenticación: " + e.message));
                         });
                     } catch (e) {
-                        setError("Error crítico: " + e.message);
+                        setError("Error de Conexión: " + e.message);
                     }
                 };
-                init();
+                initFirebase();
             }, []);
 
-            // Escuchar base de datos
+            // Escuchar Transacciones
             useEffect(() => {
                 if (!user || !fb) return;
-                const q = fb.query(fb.collection(fb.db, 'artifacts', 'billetera', 'users', user.uid, 'transactions'));
-                return fb.onSnapshot(q, (snap) => {
+                const q = fb.query(fb.collection(fb.db, 'users', user.uid, 'transactions'));
+                const unsubscribe = fb.onSnapshot(q, (snap) => {
                     const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     setTransactions(data.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
                     setLoading(false);
-                }, (err) => setError("Error de Firestore: " + err.message));
+                }, (err) => setError("Error Base de Datos: " + err.message));
+                return () => unsubscribe();
             }, [user, fb]);
 
             const handleAdd = async () => {
                 if (!amount || !fb || !user) return;
                 try {
-                    await fb.addDoc(fb.collection(fb.db, 'artifacts', 'billetera', 'users', user.uid, 'transactions'), {
+                    await fb.addDoc(fb.collection(fb.db, 'users', user.uid, 'transactions'), {
                         amount: parseFloat(amount),
                         type,
                         category: type === 'gasto' ? category : type,
@@ -119,10 +114,10 @@
             };
 
             if (error) return (
-                <div className="min-h-screen flex items-center justify-center p-6 text-center">
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl error-card max-w-sm">
+                <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl text-center border-t-4 border-red-500 max-w-xs">
                         <Icon name="AlertCircle" className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold mb-2">Algo no está bien</h2>
+                        <h2 className="text-xl font-bold mb-2">Error</h2>
                         <p className="text-slate-500 text-sm mb-6">{error}</p>
                         <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">Reintentar</button>
                     </div>
@@ -130,9 +125,9 @@
             );
 
             if (loading) return (
-                <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-                    <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-400 font-bold text-[10px] tracking-widest uppercase">Sincronizando...</p>
+                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+                    <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-slate-400 font-bold text-[10px] tracking-widest uppercase">Cargando Bóveda...</p>
                 </div>
             );
 
@@ -140,77 +135,90 @@
 
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-slate-50 pb-32">
-                    {/* El diseño Premium que te gustó */}
-                    <div className="bg-indigo-700 text-white p-8 rounded-b-[3rem] shadow-2xl relative overflow-hidden">
+                    {/* Header Premium */}
+                    <div className="bg-indigo-700 text-white p-8 rounded-b-[3.5rem] shadow-2xl relative overflow-hidden">
                         <div className="relative z-10">
-                            <h1 className="text-lg font-bold flex items-center gap-2 mb-8 opacity-90">
+                            <h1 className="text-lg font-bold flex items-center gap-2 mb-8 opacity-80">
                                 <Icon name="Wallet" className="w-5 h-5" /> Mi Billetera
                             </h1>
-                            <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">Saldo Disponible</p>
-                            <h2 className="text-4xl font-black">S/ {balance.toLocaleString()}</h2>
+                            <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Saldo Neto</p>
+                            <h2 className="text-4xl font-black tracking-tight">S/ {balance.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</h2>
                         </div>
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                     </div>
 
-                    <main className="px-4 -mt-6">
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl mb-8">
+                    <main className="px-5 -mt-8 relative z-20">
+                        {/* Formulario */}
+                        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 mb-8">
                             <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
                                 {['gasto', 'ingreso'].map(t => (
                                     <button key={t} onClick={() => setType(t)} 
-                                        className={`flex-1 py-2 text-xs font-bold rounded-xl capitalize transition-all ${type === t ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>
+                                        className={`flex-1 py-3 text-xs font-bold rounded-xl capitalize transition-all ${type === t ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400'}`}>
                                         {t}
                                     </button>
                                 ))}
                             </div>
                             
-                            <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
-                                className="w-full text-4xl font-black text-center py-4 focus:outline-none mb-4" placeholder="0.00" />
+                            <input type="number" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)}
+                                className="w-full text-5xl font-black text-center py-6 focus:outline-none mb-4 text-slate-800" placeholder="0.00" />
                             
                             {type === 'gasto' && (
-                                <div className="grid grid-cols-5 gap-2 mb-6">
+                                <div className="grid grid-cols-5 gap-3 mb-8">
                                     {CATEGORIES.map(c => (
                                         <button key={c.id} onClick={() => setCategory(c.id)} 
-                                            className={`p-3 rounded-2xl text-xl transition-all ${category === c.id ? 'bg-indigo-50 border-2 border-indigo-200 scale-110' : 'bg-slate-50 border-2 border-transparent opacity-50'}`}>
+                                            className={`aspect-square rounded-2xl text-2xl transition-all flex items-center justify-center ${category === c.id ? 'bg-indigo-50 border-2 border-indigo-200 scale-110 shadow-inner' : 'bg-slate-50 border-2 border-transparent opacity-40'}`}>
                                             {c.icon}
                                         </button>
                                     ))}
                                 </div>
                             )}
 
-                            <button onClick={handleAdd} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-all">
-                                Registrar Movimiento
+                            <button onClick={handleAdd} disabled={!amount} 
+                                className="w-full bg-indigo-600 text-white py-5 rounded-[1.5rem] font-bold shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-30 transition-all">
+                                Registrar {type}
                             </button>
                         </div>
 
-                        <div className="space-y-3">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Historial</h3>
-                            {transactions.map(t => (
-                                <div key={t.id} className="bg-white p-4 rounded-3xl flex justify-between items-center shadow-sm border border-slate-50 group transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-xl">
-                                            {CATEGORIES.find(c => c.id === t.category)?.icon || '💰'}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold capitalize text-slate-700">{t.category}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold">Hoy</p>
-                                        </div>
-                                    </div>
-                                    <p className={`font-black text-sm ${t.type === 'ingreso' ? 'text-emerald-500' : 'text-slate-700'}`}>
-                                        {t.type === 'ingreso' ? '+' : '-'} S/ {t.amount.toFixed(2)}
-                                    </p>
+                        {/* Historial */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center px-2">
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Movimientos Recientes</h3>
+                            </div>
+                            
+                            {transactions.length === 0 ? (
+                                <div className="text-center py-10 bg-white/50 rounded-3xl border-2 border-dashed border-slate-200">
+                                    <p className="text-slate-400 text-sm font-medium">No hay registros hoy</p>
                                 </div>
-                            ))}
+                            ) : (
+                                transactions.map(t => (
+                                    <div key={t.id} className="bg-white p-4 rounded-3xl flex justify-between items-center shadow-sm border border-slate-100 hover:scale-[1.02] transition-transform">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-xl shadow-inner">
+                                                {CATEGORIES.find(c => c.id === t.category)?.icon || '💰'}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold capitalize text-slate-700">{t.category}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Confirmado</p>
+                                            </div>
+                                        </div>
+                                        <p className={`font-black text-sm ${t.type === 'ingreso' ? 'text-emerald-500' : 'text-slate-700'}`}>
+                                            {t.type === 'ingreso' ? '+' : '-'} S/ {t.amount.toFixed(2)}
+                                        </p>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </main>
 
-                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] glass-nav border border-white p-2 rounded-[2.5rem] shadow-2xl flex justify-around items-center z-50">
-                        <button className="p-4 rounded-3xl bg-indigo-600 text-white shadow-lg">
+                    {/* Navbar de Cristal */}
+                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] glass-nav border border-white/50 p-2 rounded-[2.5rem] shadow-2xl flex justify-around items-center z-50">
+                        <button className="p-4 rounded-[1.8rem] bg-indigo-600 text-white shadow-xl shadow-indigo-200">
                             <Icon name="Receipt" className="w-6 h-6" />
                         </button>
-                        <button className="p-4 rounded-3xl text-slate-400">
+                        <button className="p-4 rounded-[1.8rem] text-slate-400 hover:bg-slate-50 transition-colors">
                             <Icon name="PieChart" className="w-6 h-6" />
                         </button>
-                        <button className="p-4 rounded-3xl text-slate-400">
+                        <button className="p-4 rounded-[1.8rem] text-slate-400 hover:bg-slate-50 transition-colors">
                             <Icon name="PiggyBank" className="w-6 h-6" />
                         </button>
                     </nav>
