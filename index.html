@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <!-- SEO BÁSICO -->
+  <!-- ================= SEO ================= -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Aura - Finanzas personales modernas, simples y seguras." />
   <title>Aura · Finanzas Personales</title>
 
-  <!-- FUENTE -->
+  <!-- ================= FUENTE ================= -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  >
 
-  <!-- TAILWIND CDN -->
+  <!-- ================= TAILWIND CDN ================= -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -33,22 +36,25 @@
 <body class="bg-slate-50 font-jakarta text-slate-900">
   <div id="root"></div>
 
-  <!-- REACT -->
+  <!-- ================= REACT ================= -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-  <!-- ICONOS -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- ================= BABEL (OBLIGATORIO) ================= -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- FIREBASE -->
+  <!-- ================= FIREBASE ================= -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <script>
+  <!-- ================= APP ================= -->
+  <script type="text/babel">
     const { useState, useEffect } = React;
 
-    /* ================= FIREBASE CONFIG ================= */
+    /* ======================================================
+       FIREBASE CONFIG (REEMPLAZA CON EL TUYO)
+    ====================================================== */
     const firebaseConfig = {
       apiKey: "AIzaSyD2h9l8LDl_R85R6R5Lr961jcoxVCDkSNs",
   authDomain: "mis-finanzas-600dc.firebaseapp.com",
@@ -64,30 +70,41 @@
 
     const APP_ID = "aura";
 
-    /* ================= UTILIDADES ================= */
-    const exportToCSV = (transactions) => {
+    /* ======================================================
+       UTILIDAD: EXPORTAR CSV
+    ====================================================== */
+    function exportToCSV(transactions) {
       const headers = ["Monto", "Tipo", "Categoría", "Nota", "Fecha"];
-      const rows = transactions.map(t =>
-        [t.amount, t.type, t.category, t.note, new Date(t.createdAt).toLocaleString()]
-      );
-      let csvContent = "data:text/csv;charset=utf-8,"
-        + headers.join(",") + "\n"
-        + rows.map(e => e.join(",")).join("\n");
+      const rows = transactions.map(t => [
+        t.amount,
+        t.type,
+        t.category,
+        t.note || "",
+        new Date(t.createdAt).toLocaleString()
+      ]);
+
+      let csv =
+        "data:text/csv;charset=utf-8," +
+        headers.join(",") +
+        "\n" +
+        rows.map(r => r.join(",")).join("\n");
 
       const link = document.createElement("a");
-      link.href = encodeURI(csvContent);
+      link.href = encodeURI(csv);
       link.download = "aura-transacciones.csv";
       link.click();
-    };
+    }
 
-    /* ================= COMPONENTE AUTH ================= */
-    function AuthScreen({ onAuth }) {
+    /* ======================================================
+       AUTH SCREEN
+    ====================================================== */
+    function AuthScreen() {
       const [isLogin, setIsLogin] = useState(true);
       const [email, setEmail] = useState("");
       const [password, setPassword] = useState("");
       const [error, setError] = useState("");
 
-      const handleSubmit = async () => {
+      async function handleSubmit() {
         setError("");
         try {
           if (isLogin) {
@@ -98,53 +115,64 @@
         } catch (err) {
           setError(err.message);
         }
-      };
+      }
 
-      const loginWithGoogle = async () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        await auth.signInWithPopup(provider);
-      };
+      async function loginWithGoogle() {
+        try {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          await auth.signInWithPopup(provider);
+        } catch (err) {
+          setError(err.message);
+        }
+      }
 
       return (
-        <div class="min-h-screen flex items-center justify-center px-6">
-          <div class="bg-white p-8 rounded-xl2 shadow-xl w-full max-w-sm">
-            <h1 class="text-3xl font-bold text-indigo-700 text-center mb-2">Aura</h1>
-            <p class="text-center text-slate-500 mb-6">
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="bg-white w-full max-w-sm p-8 rounded-xl2 shadow-xl">
+            <h1 className="text-3xl font-bold text-indigo-700 text-center mb-2">
+              Aura
+            </h1>
+            <p className="text-center text-slate-500 mb-6">
               Finanzas personales, sin estrés
             </p>
 
             <input
-              class="w-full mb-3 p-3 rounded-xl border"
+              className="w-full mb-3 p-3 rounded-xl border"
               placeholder="Correo electrónico"
-              onInput={e => setEmail(e.target.value)}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
             />
+
             <input
               type="password"
-              class="w-full mb-3 p-3 rounded-xl border"
+              className="w-full mb-3 p-3 rounded-xl border"
               placeholder="Contraseña"
-              onInput={e => setPassword(e.target.value)}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
             />
 
-            {error && <p class="text-red-500 text-sm mb-2">{error}</p>}
+            {error && (
+              <p className="text-red-500 text-sm mb-2">{error}</p>
+            )}
 
             <button
-              class="w-full bg-indigo-700 text-white py-3 rounded-xl mb-3"
+              className="w-full bg-indigo-700 text-white py-3 rounded-xl mb-3"
               onClick={handleSubmit}
             >
               {isLogin ? "Iniciar Sesión" : "Registrarse"}
             </button>
 
             <button
-              class="w-full border py-3 rounded-xl mb-3"
+              className="w-full border py-3 rounded-xl mb-3"
               onClick={loginWithGoogle}
             >
               Ingresar con Google
             </button>
 
-            <p class="text-center text-sm text-slate-500">
+            <p className="text-center text-sm text-slate-500">
               {isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}
               <span
-                class="text-indigo-700 ml-1 cursor-pointer"
+                className="text-indigo-700 ml-1 cursor-pointer"
                 onClick={() => setIsLogin(!isLogin)}
               >
                 {isLogin ? "Regístrate" : "Inicia sesión"}
@@ -155,18 +183,20 @@
       );
     }
 
-    /* ================= DASHBOARD ================= */
+    /* ======================================================
+       APP PRINCIPAL
+    ====================================================== */
     function App() {
       const [user, setUser] = useState(null);
       const [transactions, setTransactions] = useState([]);
-      const [tab, setTab] = useState("home");
 
       useEffect(() => {
-        auth.onAuthStateChanged(u => setUser(u));
+        return auth.onAuthStateChanged(u => setUser(u));
       }, []);
 
       useEffect(() => {
         if (!user) return;
+
         return db
           .collection("artifacts")
           .doc(APP_ID)
@@ -174,8 +204,12 @@
           .doc(user.uid)
           .collection("transactions")
           .orderBy("createdAt", "desc")
-          .onSnapshot(snap => {
-            setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          .onSnapshot(snapshot => {
+            const data = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            setTransactions(data);
           });
       }, [user]);
 
@@ -188,38 +222,50 @@
       }, 0);
 
       return (
-        <div class="pb-28">
+        <div className="pb-28">
           {/* HEADER */}
-          <div class="bg-indigo-700 text-white rounded-b-xl2 p-6">
-            <p class="text-sm opacity-80">Balance Total</p>
-            <h2 class="text-3xl font-bold">S/ {balance.toFixed(2)}</h2>
+          <div className="bg-indigo-700 text-white p-6 rounded-b-xl2">
+            <p className="text-sm opacity-80">Balance Total</p>
+            <h2 className="text-3xl font-bold">
+              S/ {balance.toFixed(2)}
+            </h2>
           </div>
 
           {/* CONTENIDO */}
-          <div class="p-4">
+          <div className="p-4">
             <button
-              class="mb-4 bg-emerald-500 text-white px-4 py-2 rounded-xl"
+              className="mb-4 bg-emerald-500 text-white px-4 py-2 rounded-xl"
               onClick={() => exportToCSV(transactions)}
             >
               Exportar CSV
             </button>
 
+            {transactions.length === 0 && (
+              <p className="text-slate-500 text-center mt-6">
+                Aún no tienes transacciones
+              </p>
+            )}
+
             {transactions.map(t => (
               <div
                 key={t.id}
-                class="bg-white p-4 mb-3 rounded-xl shadow flex justify-between"
+                className="bg-white p-4 mb-3 rounded-xl shadow flex justify-between items-center"
               >
                 <div>
-                  <p class="font-semibold">
+                  <p className="font-semibold">
                     {t.type === "ingreso" ? "💰" : "💸"} {t.category}
                   </p>
-                  <p class="text-sm text-slate-500">{t.note}</p>
+                  <p className="text-sm text-slate-500">
+                    {t.note}
+                  </p>
                 </div>
-                <p class={
-                  t.type === "ingreso"
-                    ? "text-emerald-600"
-                    : "text-rose-500"
-                }>
+                <p
+                  className={
+                    t.type === "ingreso"
+                      ? "text-emerald-600 font-semibold"
+                      : "text-rose-500 font-semibold"
+                  }
+                >
                   S/ {t.amount}
                 </p>
               </div>
@@ -227,8 +273,8 @@
           </div>
 
           {/* NAV BAR */}
-          <div class="fixed bottom-4 left-4 right-4 bg-white/70 backdrop-blur-xl rounded-xl2 shadow-lg flex justify-around py-3">
-            <button onClick={() => setTab("home")}>🏠</button>
+          <div className="fixed bottom-4 left-4 right-4 bg-white/70 backdrop-blur-xl rounded-xl2 shadow-lg flex justify-around py-3">
+            <button>🏠</button>
             <button>📊</button>
             <button>🎯</button>
             <button onClick={() => auth.signOut()}>🚪</button>
@@ -237,7 +283,9 @@
       );
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    ReactDOM
+      .createRoot(document.getElementById("root"))
+      .render(<App />);
   </script>
 </body>
 </html>
