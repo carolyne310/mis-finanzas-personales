@@ -1,233 +1,243 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Billetera - Premium</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-        .error-card { border-top: 4px solid #ef4444; }
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    </style>
-</head>
-<body class="bg-slate-50">
-    <div id="root"></div>
+  <!-- SEO BÁSICO -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Aura - Finanzas personales modernas, simples y seguras." />
+  <title>Aura · Finanzas Personales</title>
 
-    <!-- Librerías Necesarias -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- FUENTE -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 
-    <script type="text/babel">
-        // CONFIGURACIÓN CORREGIDA CON TUS DATOS
-        const firebaseConfig = {
-            apiKey: "AIzaSyD2h9l8LDl_R85R6R5Lr961jcoxVCDkSNs", // Insertada de tu mensaje anterior
-            authDomain: "mis-finanzas-600dc.firebaseapp.com",
-            projectId: "mis-finanzas-600dc",
-            storageBucket: "mis-finanzas-600dc.firebasestorage.app",
-            messagingSenderId: "509918317471",
-            appId: "1:509918317471:web:b7e6c9bfc1892fcf5d4baa"
-        };
-
-        const { useState, useEffect } = React;
-
-        const Icon = ({ name, className }) => {
-            const [svg, setSvg] = useState('');
-            useEffect(() => {
-                if (window.lucide && window.lucide.icons[name]) {
-                    setSvg(window.lucide.icons[name].toSvg({ class: className }));
-                }
-            }, [name, className]);
-            return <span dangerouslySetInnerHTML={{ __html: svg }} />;
-        };
-
-        const CATEGORIES = [
-            { id: 'comida', label: 'Comida', icon: '🍎' },
-            { id: 'transporte', label: 'Transporte', icon: '🚗' },
-            { id: 'hogar', label: 'Hogar', icon: '🏠' },
-            { id: 'ocio', label: 'Ocio', icon: '🎬' },
-            { id: 'otros', label: 'Otros', icon: '📦' },
-        ];
-
-        function App() {
-            const [fb, setFb] = useState(null);
-            const [user, setUser] = useState(null);
-            const [transactions, setTransactions] = useState([]);
-            const [amount, setAmount] = useState('');
-            const [type, setType] = useState('gasto');
-            const [category, setCategory] = useState('comida');
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-
-            // Inicializar Firebase
-            useEffect(() => {
-                const initFirebase = async () => {
-                    try {
-                        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
-                        const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
-                        const { getFirestore, collection, query, onSnapshot, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                        
-                        const app = initializeApp(firebaseConfig);
-                        const auth = getAuth(app);
-                        const db = getFirestore(app);
-                        
-                        setFb({ db, collection, query, onSnapshot, addDoc, serverTimestamp });
-
-                        onAuthStateChanged(auth, (u) => {
-                            if (u) setUser(u);
-                            else signInAnonymously(auth).catch(e => setError("Error Autenticación: " + e.message));
-                        });
-                    } catch (e) {
-                        setError("Error de Conexión: " + e.message);
-                    }
-                };
-                initFirebase();
-            }, []);
-
-            // Escuchar Transacciones
-            useEffect(() => {
-                if (!user || !fb) return;
-                const q = fb.query(fb.collection(fb.db, 'users', user.uid, 'transactions'));
-                const unsubscribe = fb.onSnapshot(q, (snap) => {
-                    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setTransactions(data.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
-                    setLoading(false);
-                }, (err) => setError("Error Base de Datos: " + err.message));
-                return () => unsubscribe();
-            }, [user, fb]);
-
-            const handleAdd = async () => {
-                if (!amount || !fb || !user) return;
-                try {
-                    await fb.addDoc(fb.collection(fb.db, 'users', user.uid, 'transactions'), {
-                        amount: parseFloat(amount),
-                        type,
-                        category: type === 'gasto' ? category : type,
-                        timestamp: fb.serverTimestamp()
-                    });
-                    setAmount('');
-                } catch (e) { setError(e.message); }
-            };
-
-            if (error) return (
-                <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-                    <div className="bg-white p-8 rounded-[2.5rem] shadow-xl text-center border-t-4 border-red-500 max-w-xs">
-                        <Icon name="AlertCircle" className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                        <h2 className="text-xl font-bold mb-2">Error</h2>
-                        <p className="text-slate-500 text-sm mb-6">{error}</p>
-                        <button onClick={() => window.location.reload()} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">Reintentar</button>
-                    </div>
-                </div>
-            );
-
-            if (loading) return (
-                <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-                    <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-slate-400 font-bold text-[10px] tracking-widest uppercase">Cargando Bóveda...</p>
-                </div>
-            );
-
-            const balance = transactions.reduce((acc, t) => acc + (t.type === 'ingreso' ? t.amount : -t.amount), 0);
-
-            return (
-                <div className="max-w-md mx-auto min-h-screen bg-slate-50 pb-32">
-                    {/* Header Premium */}
-                    <div className="bg-indigo-700 text-white p-8 rounded-b-[3.5rem] shadow-2xl relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h1 className="text-lg font-bold flex items-center gap-2 mb-8 opacity-80">
-                                <Icon name="Wallet" className="w-5 h-5" /> Mi Billetera
-                            </h1>
-                            <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Saldo Neto</p>
-                            <h2 className="text-4xl font-black tracking-tight">S/ {balance.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</h2>
-                        </div>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                    </div>
-
-                    <main className="px-5 -mt-8 relative z-20">
-                        {/* Formulario */}
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100 mb-8">
-                            <div className="flex bg-slate-100 p-1 rounded-2xl mb-6">
-                                {['gasto', 'ingreso'].map(t => (
-                                    <button key={t} onClick={() => setType(t)} 
-                                        className={`flex-1 py-3 text-xs font-bold rounded-xl capitalize transition-all ${type === t ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400'}`}>
-                                        {t}
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            <input type="number" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)}
-                                className="w-full text-5xl font-black text-center py-6 focus:outline-none mb-4 text-slate-800" placeholder="0.00" />
-                            
-                            {type === 'gasto' && (
-                                <div className="grid grid-cols-5 gap-3 mb-8">
-                                    {CATEGORIES.map(c => (
-                                        <button key={c.id} onClick={() => setCategory(c.id)} 
-                                            className={`aspect-square rounded-2xl text-2xl transition-all flex items-center justify-center ${category === c.id ? 'bg-indigo-50 border-2 border-indigo-200 scale-110 shadow-inner' : 'bg-slate-50 border-2 border-transparent opacity-40'}`}>
-                                            {c.icon}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            <button onClick={handleAdd} disabled={!amount} 
-                                className="w-full bg-indigo-600 text-white py-5 rounded-[1.5rem] font-bold shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-30 transition-all">
-                                Registrar {type}
-                            </button>
-                        </div>
-
-                        {/* Historial */}
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center px-2">
-                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Movimientos Recientes</h3>
-                            </div>
-                            
-                            {transactions.length === 0 ? (
-                                <div className="text-center py-10 bg-white/50 rounded-3xl border-2 border-dashed border-slate-200">
-                                    <p className="text-slate-400 text-sm font-medium">No hay registros hoy</p>
-                                </div>
-                            ) : (
-                                transactions.map(t => (
-                                    <div key={t.id} className="bg-white p-4 rounded-3xl flex justify-between items-center shadow-sm border border-slate-100 hover:scale-[1.02] transition-transform">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-xl shadow-inner">
-                                                {CATEGORIES.find(c => c.id === t.category)?.icon || '💰'}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold capitalize text-slate-700">{t.category}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Confirmado</p>
-                                            </div>
-                                        </div>
-                                        <p className={`font-black text-sm ${t.type === 'ingreso' ? 'text-emerald-500' : 'text-slate-700'}`}>
-                                            {t.type === 'ingreso' ? '+' : '-'} S/ {t.amount.toFixed(2)}
-                                        </p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </main>
-
-                    {/* Navbar de Cristal */}
-                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] glass-nav border border-white/50 p-2 rounded-[2.5rem] shadow-2xl flex justify-around items-center z-50">
-                        <button className="p-4 rounded-[1.8rem] bg-indigo-600 text-white shadow-xl shadow-indigo-200">
-                            <Icon name="Receipt" className="w-6 h-6" />
-                        </button>
-                        <button className="p-4 rounded-[1.8rem] text-slate-400 hover:bg-slate-50 transition-colors">
-                            <Icon name="PieChart" className="w-6 h-6" />
-                        </button>
-                        <button className="p-4 rounded-[1.8rem] text-slate-400 hover:bg-slate-50 transition-colors">
-                            <Icon name="PiggyBank" className="w-6 h-6" />
-                        </button>
-                    </nav>
-                </div>
-            );
+  <!-- TAILWIND CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            jakarta: ['"Plus Jakarta Sans"', 'sans-serif']
+          },
+          borderRadius: {
+            xl2: '2.5rem'
+          }
         }
+      }
+    }
+  </script>
+</head>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+<body class="bg-slate-50 font-jakarta text-slate-900">
+  <div id="root"></div>
+
+  <!-- REACT -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- ICONOS -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    const { useState, useEffect } = React;
+
+    /* ================= FIREBASE CONFIG ================= */
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2h9l8LDl_R85R6R5Lr961jcoxVCDkSNs",
+  authDomain: "mis-finanzas-600dc.firebaseapp.com",
+  projectId: "mis-finanzas-600dc",
+  storageBucket: "mis-finanzas-600dc.firebasestorage.app",
+  messagingSenderId: "509918317471",
+  appId: "1:509918317471:web:b7e6c9bfc1892fcf5d4baa"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const APP_ID = "aura";
+
+    /* ================= UTILIDADES ================= */
+    const exportToCSV = (transactions) => {
+      const headers = ["Monto", "Tipo", "Categoría", "Nota", "Fecha"];
+      const rows = transactions.map(t =>
+        [t.amount, t.type, t.category, t.note, new Date(t.createdAt).toLocaleString()]
+      );
+      let csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(",") + "\n"
+        + rows.map(e => e.join(",")).join("\n");
+
+      const link = document.createElement("a");
+      link.href = encodeURI(csvContent);
+      link.download = "aura-transacciones.csv";
+      link.click();
+    };
+
+    /* ================= COMPONENTE AUTH ================= */
+    function AuthScreen({ onAuth }) {
+      const [isLogin, setIsLogin] = useState(true);
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [error, setError] = useState("");
+
+      const handleSubmit = async () => {
+        setError("");
+        try {
+          if (isLogin) {
+            await auth.signInWithEmailAndPassword(email, password);
+          } else {
+            await auth.createUserWithEmailAndPassword(email, password);
+          }
+        } catch (err) {
+          setError(err.message);
+        }
+      };
+
+      const loginWithGoogle = async () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithPopup(provider);
+      };
+
+      return (
+        <div class="min-h-screen flex items-center justify-center px-6">
+          <div class="bg-white p-8 rounded-xl2 shadow-xl w-full max-w-sm">
+            <h1 class="text-3xl font-bold text-indigo-700 text-center mb-2">Aura</h1>
+            <p class="text-center text-slate-500 mb-6">
+              Finanzas personales, sin estrés
+            </p>
+
+            <input
+              class="w-full mb-3 p-3 rounded-xl border"
+              placeholder="Correo electrónico"
+              onInput={e => setEmail(e.target.value)}
+            />
+            <input
+              type="password"
+              class="w-full mb-3 p-3 rounded-xl border"
+              placeholder="Contraseña"
+              onInput={e => setPassword(e.target.value)}
+            />
+
+            {error && <p class="text-red-500 text-sm mb-2">{error}</p>}
+
+            <button
+              class="w-full bg-indigo-700 text-white py-3 rounded-xl mb-3"
+              onClick={handleSubmit}
+            >
+              {isLogin ? "Iniciar Sesión" : "Registrarse"}
+            </button>
+
+            <button
+              class="w-full border py-3 rounded-xl mb-3"
+              onClick={loginWithGoogle}
+            >
+              Ingresar con Google
+            </button>
+
+            <p class="text-center text-sm text-slate-500">
+              {isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}
+              <span
+                class="text-indigo-700 ml-1 cursor-pointer"
+                onClick={() => setIsLogin(!isLogin)}
+              >
+                {isLogin ? "Regístrate" : "Inicia sesión"}
+              </span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    /* ================= DASHBOARD ================= */
+    function App() {
+      const [user, setUser] = useState(null);
+      const [transactions, setTransactions] = useState([]);
+      const [tab, setTab] = useState("home");
+
+      useEffect(() => {
+        auth.onAuthStateChanged(u => setUser(u));
+      }, []);
+
+      useEffect(() => {
+        if (!user) return;
+        return db
+          .collection("artifacts")
+          .doc(APP_ID)
+          .collection("users")
+          .doc(user.uid)
+          .collection("transactions")
+          .orderBy("createdAt", "desc")
+          .onSnapshot(snap => {
+            setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          });
+      }, [user]);
+
+      if (!user) return <AuthScreen />;
+
+      const balance = transactions.reduce((acc, t) => {
+        if (t.type === "ingreso") return acc + t.amount;
+        if (t.type === "gasto") return acc - t.amount;
+        return acc;
+      }, 0);
+
+      return (
+        <div class="pb-28">
+          {/* HEADER */}
+          <div class="bg-indigo-700 text-white rounded-b-xl2 p-6">
+            <p class="text-sm opacity-80">Balance Total</p>
+            <h2 class="text-3xl font-bold">S/ {balance.toFixed(2)}</h2>
+          </div>
+
+          {/* CONTENIDO */}
+          <div class="p-4">
+            <button
+              class="mb-4 bg-emerald-500 text-white px-4 py-2 rounded-xl"
+              onClick={() => exportToCSV(transactions)}
+            >
+              Exportar CSV
+            </button>
+
+            {transactions.map(t => (
+              <div
+                key={t.id}
+                class="bg-white p-4 mb-3 rounded-xl shadow flex justify-between"
+              >
+                <div>
+                  <p class="font-semibold">
+                    {t.type === "ingreso" ? "💰" : "💸"} {t.category}
+                  </p>
+                  <p class="text-sm text-slate-500">{t.note}</p>
+                </div>
+                <p class={
+                  t.type === "ingreso"
+                    ? "text-emerald-600"
+                    : "text-rose-500"
+                }>
+                  S/ {t.amount}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* NAV BAR */}
+          <div class="fixed bottom-4 left-4 right-4 bg-white/70 backdrop-blur-xl rounded-xl2 shadow-lg flex justify-around py-3">
+            <button onClick={() => setTab("home")}>🏠</button>
+            <button>📊</button>
+            <button>🎯</button>
+            <button onClick={() => auth.signOut()}>🚪</button>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
 </body>
 </html>
