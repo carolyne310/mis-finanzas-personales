@@ -187,23 +187,46 @@
        APP PRINCIPAL
     ====================================================== */
     function App() {
-      const [user, setUser] = useState(null);
-      const [transactions, setTransactions] = useState([]);
-      const [showModal, setShowModal] = useState(false);
-const [amount, setAmount] = useState("");
-const [type, setType] = useState("gasto");
-const [category, setCategory] = useState("");
-const [note, setNote] = useState("");
-const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [transactions, setTransactions] = useState([]);
 
-      useEffect(() => {
-        return auth.onAuthStateChanged(u => setUser(u));
-      }, []);
+  const [showModal, setShowModal] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [type, setType] = useState("gasto");
+  const [category, setCategory] = useState("");
+  const [note, setNote] = useState("");
+  const [loading, setLoading] = useState(false);
 
-      useEffect(() => {
-        if (!user) return;
-}, [user]);
-      async function addTransaction() {
+  // 🔐 Auth listener
+  useEffect(() => {
+    return auth.onAuthStateChanged(u => setUser(u));
+  }, []);
+
+  // 🔥 Firestore realtime listener (AQUÍ estaba el error)
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = db
+      .collection("artifacts")
+      .doc(APP_ID)
+      .collection("users")
+      .doc(user.uid)
+      .collection("transactions")
+      .orderBy("createdAt", "desc")
+      .onSnapshot(snapshot => {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setTransactions(data);
+      });
+
+    // cleanup correcto
+    return unsubscribe;
+  }, [user]);
+
+  // ➕ Agregar transacción
+  async function addTransaction() {
     if (!amount || !category) return;
 
     setLoading(true);
@@ -234,32 +257,18 @@ const [loading, setLoading] = useState(false);
 
     setLoading(false);
   }
-        return db
-          .collection("artifacts")
-          .doc(APP_ID)
-          .collection("users")
-          .doc(user.uid)
-          .collection("transactions")
-          .orderBy("createdAt", "desc")
-          .onSnapshot(snapshot => {
-            const data = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            setTransactions(data);
-          });
-      }, [user]);
 
-      if (!user) return <AuthScreen />;
+  // ⛔ Guard clause
+  if (!user) return <AuthScreen />;
 
-      const balance = transactions.reduce((acc, t) => {
-        if (t.type === "ingreso") return acc + t.amount;
-        if (t.type === "gasto") return acc - t.amount;
-        return acc;
-      }, 0);
+  const balance = transactions.reduce((acc, t) => {
+    if (t.type === "ingreso") return acc + t.amount;
+    if (t.type === "gasto") return acc - t.amount;
+    return acc;
+  }, 0);
 
-      return (
-        <div className="pb-28">
+  return (
+    <div className="pb-28">
           {/* HEADER */}
           <div className="bg-indigo-700 text-white p-6 rounded-b-xl2">
             <p className="text-sm opacity-80">Balance Total</p>
