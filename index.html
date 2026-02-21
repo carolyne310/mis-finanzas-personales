@@ -196,6 +196,7 @@
   const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // 🔐 Auth listener
   useEffect(() => {
@@ -227,7 +228,10 @@
 
   // ➕ Agregar transacción
   async function addTransaction() {
-    if (!amount || !category) return;
+    if (!amount || !category) {
+  setError("Completa el monto y la categoría");
+  return;
+}
 
     setLoading(true);
 
@@ -246,6 +250,7 @@
           createdAt: Date.now()
         });
 
+      setError("");
       setAmount("");
       setCategory("");
       setNote("");
@@ -384,7 +389,12 @@
           value={note}
           onChange={e => setNote(e.target.value)}
         />
-
+{/* 👇 AQUÍ VA EL MENSAJE DE ERROR */}
+{error && (
+  <p className="text-sm text-rose-500 mb-3">
+    {error}
+  </p>
+)}
         {/* ACCIONES */}
         <div className="flex gap-3">
           <button
@@ -396,12 +406,16 @@
           </button>
 
           <button
-            type="submit"
-            className="flex-1 py-3 rounded-xl bg-indigo-700 text-white"
-            disabled={loading}
-          >
-            {loading ? "Guardando..." : "Guardar"}
-          </button>
+  type="submit"
+  disabled={loading || !amount || !category}
+  className={`flex-1 py-3 rounded-xl text-white transition ${
+    loading || !amount || !category
+      ? "bg-indigo-300 cursor-not-allowed"
+      : "bg-indigo-700"
+  }`}
+>
+  {loading ? "Guardando..." : "Guardar"}
+</button>
         </div>
       </form>
     </div>
