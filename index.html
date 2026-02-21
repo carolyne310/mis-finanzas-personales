@@ -323,73 +323,87 @@
 >
   +
 </button>
-          {showModal && (
+         {showModal && (
   <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
-    <div className="bg-white w-full max-w-md p-6 rounded-t-xl2">
+    <div className="bg-white w-full max-w-md p-6 rounded-t-[2.5rem]">
       <h3 className="text-xl font-bold mb-4">Nueva transacción</h3>
 
-      {/* MONTO */}
-      <input
-        type="number"
-        placeholder="Monto (S/)"
-        className="w-full p-3 mb-3 rounded-xl border"
-        value={amount}
-        onChange={e => setAmount(e.target.value)}
-      />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          addTransaction();
+        }}
+      >
+        {/* MONTO */}
+        <input
+          type="number"
+          placeholder="Monto (S/)"
+          className="w-full p-3 mb-3 rounded-xl border"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+        />
 
-      {/* TIPO */}
-      <div className="flex gap-2 mb-3">
-        {["ingreso", "gasto", "ahorro"].map(t => (
+        {/* TIPO */}
+        <div className="flex gap-2 mb-3">
+          {["ingreso", "gasto", "ahorro"].map(t => (
+            <button
+              key={t}
+              type="button"   // 👈 IMPORTANTE
+              onClick={() => setType(t)}
+              className={`flex-1 py-2 rounded-xl border ${
+                type === t
+                  ? t === "ingreso"
+                    ? "bg-emerald-500 text-white"
+                    : t === "gasto"
+                    ? "bg-rose-500 text-white"
+                    : "bg-violet-500 text-white"
+                  : "bg-white"
+              }`}
+            >
+              {t === "ingreso"
+                ? "💰 Ingreso"
+                : t === "gasto"
+                ? "💸 Gasto"
+                : "💜 Ahorro"}
+            </button>
+          ))}
+        </div>
+
+        {/* CATEGORÍA */}
+        <input
+          placeholder="Categoría (Ej: Comida)"
+          className="w-full p-3 mb-3 rounded-xl border"
+          value={category}
+          onChange={e => setCategory(e.target.value)}
+        />
+
+        {/* NOTA */}
+        <input
+          placeholder="Nota (opcional)"
+          className="w-full p-3 mb-4 rounded-xl border"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+        />
+
+        {/* ACCIONES */}
+        <div className="flex gap-3">
           <button
-            key={t}
-            onClick={() => setType(t)}
-            className={`flex-1 py-2 rounded-xl border ${
-              type === t
-                ? t === "ingreso"
-                  ? "bg-emerald-500 text-white"
-                  : t === "gasto"
-                  ? "bg-rose-500 text-white"
-                  : "bg-violet-500 text-white"
-                : "bg-white"
-            }`}
+            type="button"
+            className="flex-1 py-3 rounded-xl border"
+            onClick={() => setShowModal(false)}
           >
-            {t === "ingreso" ? "💰 Ingreso" : t === "gasto" ? "💸 Gasto" : "💜 Ahorro"}
+            Cancelar
           </button>
-        ))}
-      </div>
 
-      {/* CATEGORIA */}
-      <input
-        placeholder="Categoría (Ej: Comida)"
-        className="w-full p-3 mb-3 rounded-xl border"
-        value={category}
-        onChange={e => setCategory(e.target.value)}
-      />
-
-      {/* NOTA */}
-      <input
-        placeholder="Nota (opcional)"
-        className="w-full p-3 mb-4 rounded-xl border"
-        value={note}
-        onChange={e => setNote(e.target.value)}
-      />
-
-      {/* ACCIONES */}
-      <div className="flex gap-3">
-        <button
-          className="flex-1 py-3 rounded-xl border"
-          onClick={() => setShowModal(false)}
-        >
-          Cancelar
-        </button>
-        <button
-          className="flex-1 py-3 rounded-xl bg-indigo-700 text-white"
-          onClick={addTransaction}
-          disabled={loading}
-        >
-          {loading ? "Guardando..." : "Guardar"}
-        </button>
-      </div>
+          <button
+            type="submit"
+            className="flex-1 py-3 rounded-xl bg-indigo-700 text-white"
+            disabled={loading}
+          >
+            {loading ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 )}
