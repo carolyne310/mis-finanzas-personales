@@ -186,6 +186,25 @@
     /* ======================================================
        APP PRINCIPAL
     ====================================================== */
+    const DEFAULT_CATEGORIES = {
+  gasto: [
+    { id: "comida", label: "🍔 Comida" },
+    { id: "transporte", label: "🚌 Transporte" },
+    { id: "hogar", label: "🏠 Hogar" },
+    { id: "entretenimiento", label: "🎮 Ocio" },
+    { id: "salud", label: "💊 Salud" }
+  ],
+  ingreso: [
+    { id: "sueldo", label: "💰 Sueldo" },
+    { id: "freelance", label: "🧑‍💻 Freelance" },
+    { id: "otros", label: "✨ Otros" }
+  ],
+  ahorro: [
+    { id: "emergencias", label: "🚨 Emergencias" },
+    { id: "viajes", label: "✈️ Viajes" },
+    { id: "metas", label: "🎯 Metas" }
+  ]
+};
     function App() {
   const [user, setUser] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -374,14 +393,27 @@
           ))}
         </div>
 
-        {/* CATEGORÍA */}
-        <input
-          placeholder="Categoría (Ej: Comida)"
-          className="w-full p-3 mb-3 rounded-xl border"
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-        />
+      {/* CATEGORÍAS */}
+<div className="mb-4">
+  <p className="text-sm font-medium mb-2">Categoría</p>
 
+  <div className="flex flex-wrap gap-2">
+    {DEFAULT_CATEGORIES[type].map(cat => (
+      <button
+        key={cat.id}
+        type="button"
+        onClick={() => setCategory(cat.label)}
+        className={`px-3 py-2 rounded-xl text-sm border transition ${
+          category === cat.label
+            ? "bg-indigo-700 text-white border-indigo-700"
+            : "bg-white"
+        }`}
+      >
+        {cat.label}
+      </button>
+    ))}
+  </div>
+</div>
         {/* NOTA */}
         <input
           placeholder="Nota (opcional)"
